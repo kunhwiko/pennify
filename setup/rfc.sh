@@ -5,6 +5,7 @@ set -x
 # Exit on errors.
 set -e
 
+sudo pip install "pycountry==19.8.18"
 sudo pip install "xml2rfc==2.47"
 sudo apt install -y golang-go
 git submodule init
