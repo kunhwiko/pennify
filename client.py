@@ -103,11 +103,32 @@ def main():
         if cmd in ['l', 'list']:
             print 'The user asked for list.'
 
+            try:
+                sock.sendall(cmd + "<NEXT;>" + "<END;>")
+            except:
+                print("Error sending list command to server")
+
         if cmd in ['p', 'play']:
             print 'The user asked to play:', args
 
+            if len(args) > 0:
+                try:
+                    # Message Format: play<NEXT;>song number<NEXT;>timestamp<NEXT;><END;> 
+                    # For now, I omitted timestamp
+                    sock.sendall(cmd + "<NEXT;>" + args + "<NEXT;>" + "<END;>")
+                except:
+                    print("Error sending play command to server")
+            else:
+                print("Please enter a song ID number to play")
+
         if cmd in ['s', 'stop']:
             print 'The user asked for stop.'
+
+            try:
+                sock.sendall(cmd + "<NEXT;>" + "<END;>")
+            except:
+                print("Error sending stop command to server")
+
 
         if cmd in ['quit', 'q', 'exit']:
             sys.exit(0)
