@@ -14,7 +14,6 @@ from time import sleep
 # use this object to trick it.  All it really wants from the file object is the
 # read() method, so we create this wrapper with a read() method for it to
 # call, and it won't know the difference.
-# NOTE: You probably don't need to modify this class.
 class mywrapper(object):
     def __init__(self):
         self.mf = None
@@ -26,6 +25,22 @@ class mywrapper(object):
         result = self.data[:size]
         self.data = self.data[size:]
         return result
+
+# Packets can be useful when we would like to acquire some information such as message type
+# When sending info over to the server, the packet has to be stringified
+# These strings can then be decoded back to packets   
+class Packet:
+    def __init__(self, cmd, song_id, stringify = None):
+        self.message_type = cmd 
+        self.sid = song_id 
+        self.stringify = None 
+    
+    def encode_to_string(self): 
+        self.stringify = self.message_type + '<NEXT;>' + self.sid + '<NEXT;>'
+
+    def decode_to_packet(self): 
+        self.message_type, self.sid = self.stringify.split('<NEXT;>')[:-1]
+
 
 
 # Receive messages.  If they're responses to info/list, print
