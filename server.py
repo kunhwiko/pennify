@@ -17,8 +17,10 @@ class Client:
         self.lock = Lock()
         self.conn = conn 
         self.addr = addr 
-        self.songlist = songlist 
-        self.packet_queue = deque()
+        self.songlist = songlist        # has the list of songs in the music directory 
+        self.curr_song = None           # current song the instance of the client is playing 
+        self.packet_queue = deque()     # queue for packets from this client 
+        self.buffer = ""                # buffer with the song data 
 
 class Packet:
     def __init__(self, msg_type, song_id = None, str_packet = None):
@@ -54,19 +56,36 @@ def client_write(client):
 # Thread that receives commands from the client.  All recv() calls should
 # be contained in this function.
 def client_read(client):
+    recv_msg = client.conn.recv(SEND_BUFFER)
+    p = Packet()
+    p.decode_to_packet(recv_msg)
     while recv_msg:
-        recv_msg = client.conn.recv(SEND_BUFFER)
-        p = Packet()
-        p.decode_to_packet(recv_msg)
-
         client.lock.acquire()
+
+        # queue the packets to be accessed in client_write
         if p.msg_type == 'stop':
             print 'User asked to stop'
-            client.packet_queue.append(p)
+            client.packet_queue.append(p)  
+
         elif p.msg_type == 'list':
             print 'User asked for list'
             client.packet_queue.append(p)
+
         elif p.msg_type == 'play':
+            print 'User asked to play'
+            if int(p.sid) >= len(client.songlist):
+                print 'Client requested an invalid song id'
+                continue 
+            # update client's current song playing 
+            # add data to this client 
+            client.curr_song = p.sid 
+            with open('music/' + client.songlist[p.sid-1], 'r') as f:
+                client.buffer = f.read()
+        
+        elif p.msg_type == 'quit':
+            client.conn.close()
+
+        client.lock.release()
 
 
 
