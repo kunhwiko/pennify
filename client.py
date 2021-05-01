@@ -8,9 +8,11 @@ import sys
 import threading
 from time import sleep
 
+
 # global variables 
 curr_song = None 
 curr_play = False 
+
 
 # The Mad audio library we're using expects to be given a file object, but
 # we're not dealing with files, we're reading audio data over the network.  We
@@ -43,13 +45,20 @@ class Packet:
     def encode_to_string(self): 
         if self.msg_type == 'play':
             self.str_packet = self.msg_type + '<NEXT;>' + self.sid + '<NEXT;>' + self.data + '<NEXT;>' + '<END;>'
+        elif self.msg_type == 'list':
+            self.str_packet = self.msg_type + '<NEXT;>' + self.data + '<NEXT;>' + '<END;>'
         else:
             self.str_packet = self.msg_type + '<NEXT;>' + '<END;>'
 
     def decode_to_packet(self, encoded_string): 
         decoding = encoded_string.split('<NEXT;>')[:-1]
+        # decode stop / quit messages  
         if len(decoding) == 1:
             self.msg_type = decoding[0]
+        # decode list messages 
+        elif len(decoding) == 2:
+            self.msg_type, self.data = decoding[0], decoding[1]
+        # decode play messages 
         elif len(decoding) == 3:
             self.msg_type, self.sid, self.data = decoding[0], decoding[1], decoding[2] 
 
@@ -184,6 +193,7 @@ def main():
         
         else: 
             print 'Please input a valid command'
+
 
 if __name__ == '__main__':
     main()
