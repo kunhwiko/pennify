@@ -5,7 +5,6 @@ import socket
 import struct
 import sys
 from threading import Lock, Thread
-from queue import Queue
 
 
 QUEUE_LENGTH = 10
@@ -13,11 +12,8 @@ SEND_BUFFER = 4096
 
 # per-client struct
 class Client:
-    def __init__(self, conn, address):
+    def __init__(self):
         self.lock = Lock()
-        self.conn = conn
-        self.address = address
-        self.message_q = Queue(0)
 
 
 # TODO: Thread that sends music and lists to the client.  All send() calls
@@ -26,29 +22,12 @@ class Client:
 # use locks or similar synchronization tools to ensure that the two threads play
 # nice with one another!
 def client_write(client):
-
+    pass 
 
 # TODO: Thread that receives commands from the client.  All recv() calls should
 # be contained in this function.
 def client_read(client):
-
-    recv_msg = client.conn.recv(SEND_BUFFER)
-
-    while recv_msg:
-        if 'list' in recv_msg:
-            client.message_q.put('list') 
-        if 'play' in recv_msg:
-            client.message_q.put('play')
-            # Need to also add song number
-        if 'stop' in recv_msg:
-            client.message_q.put('stop')
-        
-        recv_msg = '' #reset the msg
-        recv_msg = client.conn.recv(SEND_BUFFER) #get next message
-
-
-
-
+    pass
 
 def get_mp3s(musicdir):
     print("Reading music files...")
@@ -75,14 +54,16 @@ def main():
     songs, songlist = get_mp3s(sys.argv[2])
     threads = []
 
-    # TODO: create a socket and accept incoming connections
+    # create a socket and accept incoming connections 
+    # references: https://realpython.com/python-sockets/
+    # references: https://stackoverflow.com/questions/30888397/how-to-set-send-buffer-size-for-sockets-in-python
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(('127.0.0.1', server_port))
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, SEND_BUFFER)
+    s.bind(('127.0.0.1', port))
     s.listen(QUEUE_LENGTH)
 
     while True:
-        conn, address = s.accept()
-        client = Client(conn, address)
+        client = Client()
         t = Thread(target=client_read, args=(client))
         threads.append(t)
         t.start()
@@ -94,3 +75,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
