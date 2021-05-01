@@ -173,10 +173,10 @@ def main():
     while True:
         conn, addr = s.accept()
         client = Client(conn, sys.argv[2], songlist)
-        t = Thread(target=client_read, args=(client))
+        t = Thread(target=client_read, args=(client,))
         threads.append(t)
         t.start()
-        t = Thread(target=client_write, args=(client))
+        t = Thread(target=client_write, args=(client,))
         threads.append(t)
         t.start()
     s.close()
