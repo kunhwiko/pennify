@@ -68,7 +68,6 @@ def stop_play(wrap, cond_filled):
     cond_filled.acquire()
     wrap.data = ""
     cond_filled.release()
-    curr_play = True 
 
 
 # Receive messages.  If they're responses to info/list, print
@@ -160,6 +159,7 @@ def main():
 
             # now send play packet 
             curr_song = args 
+            curr_play = True 
             p = Packet(msg_type = 'play', song_id = args)
             send_packet(p, sock, 'play')
 
@@ -170,9 +170,10 @@ def main():
             send_packet(p, sock, 'stop')
             stop_play(wrap, cond_filled)
 
-
         elif cmd in ['quit', 'q', 'exit']:
             print 'The user asked to quit.'
+            p = Packet(msg_type = 'quit')
+            send_packet(p, sock, 'quit')
             sys.exit(0)
         
         else: 

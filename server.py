@@ -5,6 +5,7 @@ import socket
 import struct
 import sys
 from threading import Lock, Thread
+from collections import deque 
 
 
 QUEUE_LENGTH = 10
@@ -12,8 +13,31 @@ SEND_BUFFER = 4096
 
 # per-client struct
 class Client:
-    def __init__(self):
+    def __init__(self, conn, addr, songlist):
         self.lock = Lock()
+        self.conn = conn 
+        self.addr = addr 
+        self.songlist = songlist 
+        self.packet_queue = deque()
+
+class Packet:
+    def __init__(self, msg_type, song_id = None, str_packet = None):
+        self.msg_type = msg_type 
+        self.sid = song_id 
+        self.str_packet = str_packet 
+    
+    def encode_to_string(self): 
+        if self.message_type == 'play':
+            self.str_packet = self.msg_type + '<NEXT;>' + self.sid + '<NEXT;>' + '<END;>'
+        else:
+            self.str_packet = self.msg_type + '<NEXT;>' + '<END;>'
+
+    def decode_to_packet(self, encoded_string): 
+        decoding = encoded_string.split('<NEXT;>')[:-1]
+        if len(decoding) == 1:
+            self.msg_type = decoding 
+        elif len(decoding) == 2:
+            self.msg_type, self.sid = decoding[0], decoding[1] 
 
 
 # TODO: Thread that sends music and lists to the client.  All send() calls
@@ -24,10 +48,29 @@ class Client:
 def client_write(client):
     pass 
 
-# TODO: Thread that receives commands from the client.  All recv() calls should
+
+
+
+# Thread that receives commands from the client.  All recv() calls should
 # be contained in this function.
 def client_read(client):
-    pass
+    while recv_msg:
+        recv_msg = client.conn.recv(SEND_BUFFER)
+        p = Packet()
+        p.decode_to_packet(recv_msg)
+
+        client.lock.acquire()
+        if p.msg_type == 'stop':
+            print 'User asked to stop'
+            client.packet_queue.append(p)
+        elif p.msg_type == 'list':
+            print 'User asked for list'
+            client.packet_queue.append(p)
+        elif p.msg_type == 'play':
+
+
+
+
 
 def get_mp3s(musicdir):
     print("Reading music files...")
@@ -36,11 +79,8 @@ def get_mp3s(musicdir):
     for filename in os.listdir(musicdir):
         if not filename.endswith(".mp3"):
             continue
-
-        # TODO: Store song metadata for future use.  You may also want to build
-        # the song list once and send to any clients that need it.
-
-        songs.append(None)
+        songs.append(filename)
+    return songs 
 
     print("Found {0} song(s)!".format(len(songs)))
 
@@ -51,7 +91,7 @@ def main():
         sys.exit("Directory '{0}' does not exist".format(sys.argv[2]))
 
     port = int(sys.argv[1])
-    songs, songlist = get_mp3s(sys.argv[2])
+    songlist = get_mp3s(sys.argv[2])
     threads = []
 
     # create a socket and accept incoming connections 
@@ -63,7 +103,8 @@ def main():
     s.listen(QUEUE_LENGTH)
 
     while True:
-        client = Client()
+        conn, addr = s.accept()
+        client = Client(conn, addr, songlist)
         t = Thread(target=client_read, args=(client))
         threads.append(t)
         t.start()
