@@ -40,7 +40,7 @@ class Packet:
         self.str_packet = str_packet 
     
     def encode_to_string(self): 
-        if self.message_type == 'play':
+        if self.msg_type == 'play':
             self.str_packet = self.msg_type + '<NEXT;>' + self.sid + '<NEXT;>' + '<END;>'
         else:
             self.str_packet = self.msg_type + '<NEXT;>' + '<END;>'
@@ -64,7 +64,6 @@ def send_packet(packet, sock, msg_type):
 
 # stop playing current song if playing 
 def stop_play(wrap, cond_filled):
-    curr_play = False 
     cond_filled.acquire()
     wrap.data = ""
     cond_filled.release()
@@ -103,6 +102,9 @@ def main():
     # Create a pseudo-file wrapper, condition variable, and socket.  These will
     # be passed to the thread we're about to create.
     wrap = mywrapper()
+
+    global curr_song 
+    global curr_play 
 
     # Create a condition variable to synchronize the receiver and player threads.
     # In python, this implicitly creates a mutex lock too.
@@ -147,12 +149,14 @@ def main():
             send_packet(p, sock, 'list')
 
         elif cmd in ['p', 'play']:
-            if args == None: 
+            if args == None or unicode(args).isnumeric() == False: 
                 print 'Please enter a song ID number to play'
                 continue 
             print 'The user asked to play:', args
+
             # stop playing the current song before playing a new song 
             curr_song = None 
+            curr_play = False 
             p = Packet(msg_type = 'stop')
             send_packet(p, sock, 'stop')
             stop_play(wrap, cond_filled)
@@ -166,6 +170,7 @@ def main():
         elif cmd in ['s', 'stop']:
             print 'The user asked for stop.'
             curr_song = None 
+            curr_play = False 
             p = Packet(msg_type = 'stop')
             send_packet(p, sock, 'stop')
             stop_play(wrap, cond_filled)

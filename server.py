@@ -29,7 +29,7 @@ class Packet:
         self.str_packet = str_packet 
     
     def encode_to_string(self): 
-        if self.message_type == 'play':
+        if self.msg_type == 'play':
             self.str_packet = self.msg_type + '<NEXT;>' + self.sid + '<NEXT;>' + '<END;>'
         else:
             self.str_packet = self.msg_type + '<NEXT;>' + '<END;>'
