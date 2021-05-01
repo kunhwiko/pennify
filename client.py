@@ -9,8 +9,8 @@ import threading
 from time import sleep
 
 # global variables 
-current_song = None 
-current_play = False 
+curr_song = None 
+curr_play = False 
 
 # The Mad audio library we're using expects to be given a file object, but
 # we're not dealing with files, we're reading audio data over the network.  We
@@ -34,41 +34,39 @@ class mywrapper(object):
 # When sending info over to the server, the packet has to be stringified
 # These strings can then be decoded back to packets   
 class Packet:
-    def __init__(self, message_type, song_id = None, stringify = None):
-        self.message_type = message_type 
+    def __init__(self, msg_type, song_id = None, str_packet = None):
+        self.msg_type = msg_type 
         self.sid = song_id 
-        self.stringify = stringify 
+        self.str_packet = str_packet 
     
     def encode_to_string(self): 
-        if self.message_type == 'play':
-            self.stringify = self.message_type + '<NEXT;>' + self.sid + '<NEXT;>' + '<END;>'
+        if self.msg_type == 'play':
+            self.str_packet = self.msg_type + '<NEXT;>' + self.sid + '<NEXT;>' + '<END;>'
         else:
-            self.stringify = self.message_type + '<NEXT;>' + '<END;>'
+            self.str_packet = self.msg_type + '<NEXT;>' + '<END;>'
 
     def decode_to_packet(self, encoded_string): 
         decoding = encoded_string.split('<NEXT;>')[:-1]
         if len(decoding) == 1:
-            self.message_type = decoding 
+            self.msg_type = decoding 
         elif len(decoding) == 2:
-            self.message_type, self.sid = decoding[0], decoding[1] 
+            self.msg_type, self.sid = decoding[0], decoding[1] 
 
 
 # send over packets to server 
-def send_packet(packet, sock, message_type): 
+def send_packet(packet, sock, msg_type): 
     packet.encode_to_string()
     try: 
-        sock.sendall(packet.stringify)
+        sock.sendall(packet.str_packet)
     except:
-        print 'Error sending ' + message_type + ' command to server'
+        print 'Error sending ' + msg_type + ' command to server'
 
 
 # stop playing current song if playing 
 def stop_play(wrap, cond_filled):
-    current_play = False 
     cond_filled.acquire()
     wrap.data = ""
     cond_filled.release()
-    current_play = True 
 
 
 # Receive messages.  If they're responses to info/list, print
@@ -104,6 +102,9 @@ def main():
     # Create a pseudo-file wrapper, condition variable, and socket.  These will
     # be passed to the thread we're about to create.
     wrap = mywrapper()
+
+    global curr_song 
+    global curr_play 
 
     # Create a condition variable to synchronize the receiver and player threads.
     # In python, this implicitly creates a mutex lock too.
@@ -144,35 +145,40 @@ def main():
 
         if cmd in ['l', 'list']:
             print 'The user asked for list.'
-            p = Packet(message_type = 'list')
+            p = Packet(msg_type = 'list')
             send_packet(p, sock, 'list')
 
         elif cmd in ['p', 'play']:
-            if args == None: 
+            if args == None or unicode(args).isnumeric() == False: 
                 print 'Please enter a song ID number to play'
                 continue 
             print 'The user asked to play:', args
+
             # stop playing the current song before playing a new song 
-            current_song = None 
-            p = Packet(message_type = 'stop')
+            curr_song = None 
+            curr_play = False 
+            p = Packet(msg_type = 'stop')
             send_packet(p, sock, 'stop')
             stop_play(wrap, cond_filled)
 
             # now send play packet 
-            current_song = args 
-            p = Packet(message_type = 'play', song_id = args)
+            curr_song = args 
+            curr_play = True 
+            p = Packet(msg_type = 'play', song_id = args)
             send_packet(p, sock, 'play')
 
         elif cmd in ['s', 'stop']:
             print 'The user asked for stop.'
-            current_song = None 
-            p = Packet(message_type = 'stop')
+            curr_song = None 
+            curr_play = False 
+            p = Packet(msg_type = 'stop')
             send_packet(p, sock, 'stop')
             stop_play(wrap, cond_filled)
 
-
         elif cmd in ['quit', 'q', 'exit']:
             print 'The user asked to quit.'
+            p = Packet(msg_type = 'quit')
+            send_packet(p, sock, 'quit')
             sys.exit(0)
         
         else: 
