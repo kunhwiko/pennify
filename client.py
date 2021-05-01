@@ -34,23 +34,24 @@ class mywrapper(object):
 # When sending info over to the server, the packet has to be stringified
 # These strings can then be decoded back to packets   
 class Packet:
-    def __init__(self, msg_type, song_id = None, str_packet = None):
+    def __init__(self, msg_type = None, song_id = None, str_packet = None, data = "<NO DATA>"):
         self.msg_type = msg_type 
         self.sid = song_id 
+        self.data = data 
         self.str_packet = str_packet 
     
     def encode_to_string(self): 
         if self.msg_type == 'play':
-            self.str_packet = self.msg_type + '<NEXT;>' + self.sid + '<NEXT;>' + '<END;>'
+            self.str_packet = self.msg_type + '<NEXT;>' + self.sid + '<NEXT;>' + self.data + '<NEXT;>' + '<END;>'
         else:
             self.str_packet = self.msg_type + '<NEXT;>' + '<END;>'
 
     def decode_to_packet(self, encoded_string): 
         decoding = encoded_string.split('<NEXT;>')[:-1]
         if len(decoding) == 1:
-            self.msg_type = decoding 
-        elif len(decoding) == 2:
-            self.msg_type, self.sid = decoding[0], decoding[1] 
+            self.msg_type = decoding[0]
+        elif len(decoding) == 3:
+            self.msg_type, self.sid, self.data = decoding[0], decoding[1], decoding[2] 
 
 
 # send over packets to server 
