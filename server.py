@@ -42,7 +42,7 @@ class Packet:
             self.msg_type, self.sid = decoding[0], decoding[1] 
 
 
-# TODO: Thread that sends music and lists to the client.  All send() calls
+# Thread that sends music and lists to the client.  All send() calls
 # should be contained in this function.  Control signals from client_read could
 # be passed to this thread through the associated Client object.  Make sure you
 # use locks or similar synchronization tools to ensure that the two threads play
@@ -78,6 +78,7 @@ def client_read(client):
                 continue 
             # update client's current song playing 
             # add data to this client 
+            client.packet_queue.append(p)
             client.curr_song = p.sid 
             with open('music/' + client.songlist[p.sid-1], 'r') as f:
                 client.buffer = f.read()
@@ -86,9 +87,6 @@ def client_read(client):
             client.conn.close()
 
         client.lock.release()
-
-
-
 
 
 def get_mp3s(musicdir):
