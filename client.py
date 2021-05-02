@@ -121,7 +121,12 @@ def play_thread_func(wrap, cond_filled, dev):
         buf = wrap.mf.read()
         dev.play(buffer(buf), len(buf))
         """
-
+        if wrap.mf is not None:
+            cond_filled.acquire()
+            buf = wrap.mf.read()
+            cond_filled.release()
+            if buf:
+                dev.play(buffer(buf), len(buf))
 
 def main():
     if len(sys.argv) < 3:
