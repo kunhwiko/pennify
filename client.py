@@ -11,7 +11,8 @@ from time import sleep
 
 # global variables 
 curr_song = None 
-curr_play = False 
+curr_play = False
+RECV_BUFFER = 4096
 
 
 # The Mad audio library we're using expects to be given a file object, but
@@ -86,8 +87,26 @@ def stop_play(wrap, cond_filled):
 # it too!
 def recv_thread_func(wrap, cond_filled, sock):
     while True:
-        # TODO
-        pass
+        message = sock.recv(RECV_BUFFER)
+        p = Packet()
+        p.decode_to_packet(message)
+
+        if p.msg_type == 'list':
+            songs = p.data.split('.mp3')
+            for s in songs:
+                print s
+        
+        elif p.msg_type == 'play':
+            cond_filled.acquire()
+            wrap.data += p.data
+            cond_filled.release()
+        
+        if wrap.mf is None:
+            cond_filled.acquire()
+            wrap.mf = mad.MadFile(wrap)
+            cond_filled.release()
+        
+        
 
 
 # If there is song data stored in the wrapper object, play it!

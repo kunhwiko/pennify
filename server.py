@@ -89,13 +89,13 @@ def client_write(client):
                         # no more data to send 
                         if len(buffered_data) == 0:
                             break  
-
+                        
                         packet.data = buffered_data
                         packet.encode_to_string()
                         try: 
                             client.conn.sendall(packet.str_packet)
                         except:
-                            print 'Error sending play response to client'                          
+                            print 'Error sending play response to client'                        
 
 
 # Thread that receives commands from the client.  All recv() calls should
@@ -135,7 +135,8 @@ def client_read(client):
         elif p.msg_type == 'quit':
             client.lock.acquire()
             client.conn.close()
-            client.lock.release()  
+            client.lock.release()
+            sys.exit(0)
             break 
 
 
