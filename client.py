@@ -88,15 +88,18 @@ def stop_play(wrap, cond_filled):
 def recv_thread_func(wrap, cond_filled, sock):
     while True:
         message = sock.recv(RECV_BUFFER)
+        if message == None:
+            continue 
         p = Packet()
         p.decode_to_packet(message)
 
-        if p.msg_type == 'list':
-            songs = p.data.split('.mp3')
-            for s in songs:
-                print s
+        if p.msg_type == 'stop':
+            continue 
+
+        elif p.msg_type == 'list':
+            print str(p.data)
         
-        elif p.msg_type == 'play':
+        elif p.msg_type == 'play' and p.sid == curr_song:
             cond_filled.acquire()
             wrap.data += p.data
             cond_filled.release()
@@ -107,8 +110,6 @@ def recv_thread_func(wrap, cond_filled, sock):
             cond_filled.release()
         
         
-
-
 # If there is song data stored in the wrapper object, play it!
 # Otherwise, wait until there is.  Be sure to protect your accesses
 # to the wrapper with synchronization, since the other thread is
@@ -116,16 +117,17 @@ def recv_thread_func(wrap, cond_filled, sock):
 def play_thread_func(wrap, cond_filled, dev):
     while True:
         """
-        TODO
         example usage of dev and wrap (see mp3-example.py for a full example):
         buf = wrap.mf.read()
         dev.play(buffer(buf), len(buf))
         """
         if wrap.mf is not None:
             cond_filled.acquire()
+            if len(wrap.data) == 0:
+                cond_filled.wait()
             buf = wrap.mf.read()
             cond_filled.release()
-            if buf:
+            if buf and curr_play == True:
                 dev.play(buffer(buf), len(buf))
 
 def main():
