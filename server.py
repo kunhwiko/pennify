@@ -74,7 +74,7 @@ def client_write(client):
             elif packet.msg_type == 'list':
                 data = ''
                 for i, song in enumerate(client.songlist):
-                    data += str(i) + ' : ' + song 
+                    data += "{" + "sid: " + str(i) + " title: " + song  + "}"
                 packet.data = data 
                 packet.encode_to_string()
                 try: 
@@ -109,19 +109,19 @@ def client_read(client):
         # queue the packets to be accessed in client_write
         if p.msg_type == 'stop':
             client.lock.acquire()
-            print 'User asked to stop'
+            print 'Received stop request'
             client.packet_queue.append(p)
             client.lock.release()  
 
         elif p.msg_type == 'list':
             client.lock.acquire()
-            print 'User asked for list'
+            print 'Received list request'
             client.packet_queue.append(p)
             client.lock.release() 
 
         elif p.msg_type == 'play':
             client.lock.acquire()
-            print 'User asked to play'
+            print 'Received play request'
             if int(p.sid) >= len(client.songlist):
                 print 'Client requested an invalid song id'
                 client.lock.release() 
@@ -148,9 +148,8 @@ def get_mp3s(musicdir):
         if not filename.endswith(".mp3"):
             continue
         songs.append(filename)
-    return songs 
-
     print("Found {0} song(s)!".format(len(songs)))
+    return songs 
 
 
 def main():

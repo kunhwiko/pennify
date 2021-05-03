@@ -204,7 +204,7 @@ def main():
             send_packet(p, sock, 'play')
 
         elif cmd in ['s', 'stop']:
-            print 'The user asked for stop.'
+            print 'The user asked to stop.'
             curr_song = None 
             curr_play = False 
             p = Packet(msg_type = 'stop')
