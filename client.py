@@ -37,31 +37,28 @@ class mywrapper(object):
 # When sending info over to the server, the packet has to be stringified
 # These strings can then be decoded back to packets   
 class Packet:
-    def __init__(self, msg_type = None, song_id = None, str_packet = None, data = "<NO DATA>"):
+    def __init__(self, msg_type = None, song_id = None):
         self.msg_type = msg_type 
         self.sid = song_id 
-        self.data = data 
-        self.str_packet = str_packet 
+        self.data = None 
+        self.str_packet = None 
     
+    # encode string to send to server
     def encode_to_string(self): 
         if self.msg_type == 'play':
-            self.str_packet = self.msg_type + '<NEXT;>' + self.sid + '<NEXT;>' + self.data + '<NEXT;>' + '<END;>'
+            self.str_packet = self.msg_type + '<NEXT;>' + self.sid + '<NEXT;>' + '<END;>'
         elif self.msg_type == 'list':
-            self.str_packet = self.msg_type + '<NEXT;>' + self.data + '<NEXT;>' + '<END;>'
+            self.str_packet = self.msg_type + '<NEXT;>' + '<END;>'
         else:
             self.str_packet = self.msg_type + '<NEXT;>' + '<END;>'
 
+    # decode packet received from server 
     def decode_to_packet(self, encoded_string): 
-        decoding = encoded_string.split('<NEXT;>')[:-1]
-        # decode stop / quit messages  
-        if len(decoding) == 1:
+        decoding = encoded_string.split('<NEXT;>')
+        if decoding[0] == 'stop':
             self.msg_type = decoding[0]
-        # decode list messages 
-        elif len(decoding) == 2:
+        else:
             self.msg_type, self.data = decoding[0], decoding[1]
-        # decode play messages 
-        elif len(decoding) == 3:
-            self.msg_type, self.sid, self.data = decoding[0], decoding[1], decoding[2] 
 
 
 # send over packets to server 
@@ -88,44 +85,47 @@ def stop_play(wrap, cond_filled):
 def recv_thread_func(wrap, cond_filled, sock):
     while True:
         message = sock.recv(RECV_BUFFER)
+        
+        if message == None:
+            continue 
+        
+        # decode string received from server into a packet 
         p = Packet()
         p.decode_to_packet(message)
+        p.sid = curr_song 
 
-        if p.msg_type == 'list':
-            songs = p.data.split('.mp3')
-            for s in songs:
-                print s
+        if p.msg_type == 'stop':
+            continue 
+
+        elif p.msg_type == 'list':
+            print str(p.data)      
         
         elif p.msg_type == 'play':
             cond_filled.acquire()
-            wrap.data += p.data
+            if curr_play == True:
+                wrap.data += p.data
             cond_filled.release()
         
+        cond_filled.acquire()
+
         if wrap.mf is None:
-            cond_filled.acquire()
             wrap.mf = mad.MadFile(wrap)
-            cond_filled.release()
+
+        cond_filled.release()  
         
         
-
-
 # If there is song data stored in the wrapper object, play it!
 # Otherwise, wait until there is.  Be sure to protect your accesses
 # to the wrapper with synchronization, since the other thread is
 # using it too!
 def play_thread_func(wrap, cond_filled, dev):
     while True:
-        """
-        TODO
-        example usage of dev and wrap (see mp3-example.py for a full example):
-        buf = wrap.mf.read()
-        dev.play(buffer(buf), len(buf))
-        """
-        if wrap.mf is not None:
+        if wrap.mf:
             cond_filled.acquire()
             buf = wrap.mf.read()
             cond_filled.release()
-            if buf:
+            
+            if buf and curr_play:
                 dev.play(buffer(buf), len(buf))
 
 def main():
@@ -194,6 +194,7 @@ def main():
             p = Packet(msg_type = 'stop')
             send_packet(p, sock, 'stop')
             stop_play(wrap, cond_filled)
+            sleep(1)
 
             # now send play packet 
             curr_song = args 
@@ -202,7 +203,7 @@ def main():
             send_packet(p, sock, 'play')
 
         elif cmd in ['s', 'stop']:
-            print 'The user asked for stop.'
+            print 'The user asked to stop.'
             curr_song = None 
             curr_play = False 
             p = Packet(msg_type = 'stop')
