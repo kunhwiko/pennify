@@ -10,7 +10,7 @@ from collections import deque
 
 QUEUE_LENGTH = 10
 SEND_BUFFER = 4096
-MAX_DATA_BUFFER = 4000  # arbitrary number less than the send buffer, this is the amount allocated to buffer just the data portion 
+MAX_DATA_BUFFER = 4072    # this is the amount of buffer allocated for the data only 
 
 
 # per-client struct
@@ -25,31 +25,28 @@ class Client:
 
 
 class Packet:
-    def __init__(self, msg_type = None, song_id = None, str_packet = None, data = "<NO DATA>"):
+    def __init__(self, msg_type = None, song_id = None):
         self.msg_type = msg_type 
         self.sid = song_id 
-        self.data = data 
-        self.str_packet = str_packet 
+        self.data = None 
+        self.str_packet = None 
     
+    # encode string to send to client 
     def encode_to_string(self): 
         if self.msg_type == 'play':
-            self.str_packet = self.msg_type + '<NEXT;>' + self.sid + '<NEXT;>' + self.data + '<NEXT;>' + '<END;>'
+            self.str_packet = self.msg_type + '<NEXT;>' + self.data + '<NEXT;>' + '<END;>'
         elif self.msg_type == 'list':
             self.str_packet = self.msg_type + '<NEXT;>' + self.data + '<NEXT;>' + '<END;>'
         else:
             self.str_packet = self.msg_type + '<NEXT;>' + '<END;>'
 
+    # decode packet received from client 
     def decode_to_packet(self, encoded_string): 
         decoding = encoded_string.split('<NEXT;>')[:-1]
-        # decode stop / quit messages  
-        if len(decoding) == 1:
+        if decoding[0] == 'play':
+            self.msg_type, self.sid = decoding[0], decoding[1]
+        else:
             self.msg_type = decoding[0]
-        # decode list messages 
-        elif len(decoding) == 2:
-            self.msg_type, self.data = decoding[0], decoding[1]
-        # decode play messages 
-        elif len(decoding) == 3:
-            self.msg_type, self.sid, self.data = decoding[0], decoding[1], decoding[2] 
 
 
 # Thread that sends music and lists to the client.  All send() calls
@@ -59,7 +56,7 @@ class Packet:
 # nice with one another!
 def client_write(client):
     while True:
-        if len(client.packet_queue) > 0:
+        while len(client.packet_queue) > 0:
             client.lock.acquire()
             packet = client.packet_queue.popleft()
             client.lock.release()
@@ -74,7 +71,7 @@ def client_write(client):
             elif packet.msg_type == 'list':
                 data = ''
                 for i, song in enumerate(client.songlist):
-                    data += "{" + "sid: " + str(i) + " title: " + song  + "}"
+                    data += "{" + "sid: " + str(i) + " title: " + song  + "}\n" 
                 packet.data = data 
                 packet.encode_to_string()
                 try: 
@@ -85,17 +82,18 @@ def client_write(client):
             elif packet.msg_type == 'play':
                 with open(client.musicdir + '/' + client.songlist[int(packet.sid)-1], "r") as song:
                     while True:
-                        buffered_data = song.read(MAX_DATA_BUFFER)
+                        buffered_data = song.read(SEND_BUFFER-24)
                         # no more data to send 
                         if len(buffered_data) == 0:
                             break  
                         
                         packet.data = buffered_data
                         packet.encode_to_string()
+                        print len(packet.str_packet)
                         try: 
                             client.conn.sendall(packet.str_packet)
                         except:
-                            print 'Error sending play response to client'                        
+                            print 'Error sending play response to client'  
 
 
 # Thread that receives commands from the client.  All recv() calls should
