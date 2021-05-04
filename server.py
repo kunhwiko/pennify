@@ -42,7 +42,7 @@ class Packet:
 
     # decode packet received from client 
     def decode_to_packet(self, encoded_string): 
-        decoding = encoded_string.split('<NEXT;>')[:-1]
+        decoding = encoded_string.split('<NEXT;>')
         if decoding[0] == 'play':
             self.msg_type, self.sid = decoding[0], decoding[1]
         else:
@@ -80,7 +80,7 @@ def client_write(client):
                     print 'Error sending list response to client'                
 
             elif packet.msg_type == 'play':
-                with open(client.musicdir + '/' + client.songlist[int(packet.sid)-1], "r") as song:
+                with open(client.musicdir + '/' + client.songlist[int(packet.sid)], "r") as song:
                     while True:
                         buffered_data = song.read(SEND_BUFFER-24)
                         # no more data to send 
@@ -89,7 +89,6 @@ def client_write(client):
                         
                         packet.data = buffered_data
                         packet.encode_to_string()
-                        print len(packet.str_packet)
                         try: 
                             client.conn.sendall(packet.str_packet)
                         except:
