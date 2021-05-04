@@ -54,7 +54,8 @@ class Packet:
 
     # decode packet received from client 
     def decode_to_packet(self, encoded_string): 
-        decoding = encoded_string.split('<NEXT;>')[:-1]
+        decoding = encoded_string.split('<NEXT;>')
+        print("decoding: " + str(len(decoding)))
         if decoding[0] == 'stop':
             self.msg_type = decoding[0]
         else:
@@ -85,6 +86,7 @@ def stop_play(wrap, cond_filled):
 def recv_thread_func(wrap, cond_filled, sock):
     while True:
         message = sock.recv(RECV_BUFFER)
+        print len(message)
         
         if message == None:
             continue 
