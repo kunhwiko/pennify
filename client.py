@@ -52,7 +52,7 @@ class Packet:
         else:
             self.str_packet = self.msg_type + '<NEXT;>' + '<END;>'
 
-    # decode packet received from client 
+    # decode packet received from server 
     def decode_to_packet(self, encoded_string): 
         decoding = encoded_string.split('<NEXT;>')
         if decoding[0] == 'stop':
@@ -88,7 +88,8 @@ def recv_thread_func(wrap, cond_filled, sock):
         
         if message == None:
             continue 
-
+        
+        # decode string received from server into a packet 
         p = Packet()
         p.decode_to_packet(message)
         p.sid = curr_song 
@@ -119,15 +120,11 @@ def recv_thread_func(wrap, cond_filled, sock):
 # using it too!
 def play_thread_func(wrap, cond_filled, dev):
     while True:
-        """
-        example usage of dev and wrap (see mp3-example.py for a full example):
-        buf = wrap.mf.read()
-        dev.play(buffer(buf), len(buf))
-        """
         if wrap.mf:
             cond_filled.acquire()
             buf = wrap.mf.read()
             cond_filled.release()
+            
             if buf and curr_play:
                 dev.play(buffer(buf), len(buf))
 

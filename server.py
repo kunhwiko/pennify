@@ -82,8 +82,8 @@ def client_write(client):
             elif packet.msg_type == 'play':
                 with open(client.musicdir + '/' + client.songlist[int(packet.sid)], "r") as song:
                     while True:
-                        buffered_data = song.read(SEND_BUFFER-24)
-                        # no more data to send 
+                        buffered_data = song.read(MAX_DATA_BUFFER)
+                        # stop when there is no more data to send 
                         if len(buffered_data) == 0:
                             break  
                         
