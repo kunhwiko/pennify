@@ -3,7 +3,7 @@
 2. Run "ssh -i ec2/login2.pem ubuntu@ec2-34-228-194-115.compute-1.amazonaws.com" to enter the EC2 instance
 3. When inside the EC2 instance, try "cd pennify". If the pennify directory exists, continue to step 5.
 4. If the pennify directory doesn't exist, clone it from this repository.
-5. Inside the pennify directory, run python server.py 55353 music
+5. Inside the pennify directory, run "python server.py 55353 music"
 6. The server is now running on EC2
 7. Use ctrl \ to exit the server
 
