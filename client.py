@@ -87,7 +87,7 @@ def recv_thread_func(wrap, cond_filled, sock):
     while True:
         message = sock.recv(RECV_BUFFER)
         
-        if message == None:
+        if message == None or '<NEXT;>' not in message:
             continue 
         
         # decode string received from server into a packet 
