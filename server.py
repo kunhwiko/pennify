@@ -165,7 +165,7 @@ def main():
     # references: https://stackoverflow.com/questions/30888397/how-to-set-send-buffer-size-for-sockets-in-python
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, SEND_BUFFER)
-    s.bind(("34.228.194.115", port))
+    s.bind(("", port))
     s.listen(QUEUE_LENGTH)
 
     while True:
