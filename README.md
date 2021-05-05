@@ -1,3 +1,17 @@
+### How to connect to the EC2 instance:
+1. Go to the pennify directory (doesn't have to be in Vagrant).
+2. Run "ssh -i ec2/login2.pem ubuntu@ec2-34-228-194-115.compute-1.amazonaws.com" to enter the EC2 instance
+3. When inside the EC2 instance, try "cd pennify". If the pennify directory exists, continue to step 5.
+4. If the pennify directory doesn't exist, clone it from this repository.
+5. Inside the pennify directory, run python server.py 55353 music
+6. The server is not running on EC2
+7. Use ctrl \ to exit the server
+
+### How to run the client
+1. In vagrant, go to the pennify directory
+2. Run "python client.py 34.228.194.115 55353"
+
+
 # Project 6: Streaming Music Service
 
 In this project, you'll be designing and implementing a protocol of your own in order to learn all of the concerns that go into constructing one.
