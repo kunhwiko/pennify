@@ -1,11 +1,11 @@
 ### How to run the client
 1. In the directory with client.py, run "python client.py 34.228.194.115 55353"
+2. Enter "l" or "list" to receive a list of available songs; "p" or "play", followed by a song number, to play a song; "s" or "stop" to stop playing the current song; or enter "quit", "q", or "exit" to leave the client. 
 
 ### How to connect to the EC2 instance:
 1. The server should already be running on an EC2 instance
-2. In the event that it isn't, run "ssh -i ec2/login2.pem ubuntu@ec2-34-228-194-115.compute-1.amazonaws.com" to enter the EC2 instance
-3. When inside the EC2 instance, run "cd pennify". If the pennify directory exists, continue to step 5.
-4. If the pennify directory doesn't exist, clone it from this repository.
+2. In the event that it isn't, run "ssh -i login2.pem ubuntu@ec2-34-228-194-115.compute-1.amazonaws.com" to enter the EC2 instance
+3. When inside the EC2 instance, run "cd pennify".
 5. Inside the pennify directory, run "python server.py 55353 music"
 6. The server is now running on EC2
 7. Use ctrl \ to exit the server
