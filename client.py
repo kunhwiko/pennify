@@ -85,9 +85,15 @@ def stop_play(wrap, cond_filled):
 # it too!
 def recv_thread_func(wrap, cond_filled, sock):
     while True:
-        message = sock.recv(RECV_BUFFER)
+        # must prebuffer the data to not lose music 
+        message = ""
+
+        while len(message) < RECV_BUFFER:
+            message += sock.recv(RECV_BUFFER - len(message))
+            if message[-6:] == "<END;>":
+                break 
         
-        if message == None or '<NEXT;>' not in message:
+        if message == None:
             continue 
         
         # decode string received from server into a packet 
