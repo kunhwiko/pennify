@@ -5,7 +5,7 @@
 Internet Engineering Task Force (IETF)                      B. Perriello
 Request for Comments: 553                                               
 Category: Informational                                            K. Ko
-ISSN: 2070-1721                                            21 April 2021
+ISSN: 2070-1721                                               4 May 2021
 
 
                       Protocol for Penn Streaming
@@ -56,10 +56,15 @@ Table of Contents
      2.2.  Message Formatting - Text vs. Binary
      2.3.  Message Formatting - Message Delimiters
    3.  State
-     3.1.  State the server should store per-client
-     3.2.  How messages enable state transitions
-   4.  Performance Considerations
-   5.  Acknowledgements
+     3.1.  Client State
+     3.2.  Server State
+     3.3.  State Transitions
+   4.  Streaming
+     4.1.  Step 1 : Creating a Client Request
+     4.2.  Step 2 : Processing Server Response
+     4.3.  Step 3: Processing Client Response
+   5.  Performance Considerations
+   6.  Acknowledgements
 
 1.  Introduction
 
@@ -87,21 +92,22 @@ Table of Contents
    At a minimum, the protocol SHOULD handle the following messages.
    These messages are similar to those of RTSP.
 
-   Client messages:
+   Client requests:
 
-   *  setup : request to connect with the server
+   *  list : request the list of songs existing in the server and their
+      ID number
 
-   *  list : request the list of songs existing in the server
+   *  play (song id) : request to play a certain song, a song id must be
+      specified
 
-   *  play : request to play a certain song
+   *  stop : request the server to stop sending data
 
-   *  stop : request the server to pause sending data packets
+   *  quit : request to disconnect with the server
 
-   *  teardown : request to disconnect with the server
+   Server responses:
 
-   Server messages:
-
-   *  list : return the list of songs existing in the server
+   *  list : return the list of songs existing in the server and their
+      ID number
 
    *  play : provide the client with chunks of data for the specified
       song
@@ -109,75 +115,101 @@ Table of Contents
    *  stop : stop providing client with chunks of data for the specified
       song
 
-   *  error : tell the client that an error has occurred (e.g. song does
-      not exist)
+   There are some key points to note.  Upon a client quit request, the
+   server SHALL NOT send any response back to the client.  If the client
+   is able to exit gracefully, this indicates that the quit request has
+   been properly executed.
+
+   If a non-existant song ID is provided by the user, the server SHALL
+   NOT send a response back to the client.
 
 2.2.  Message Formatting - Text vs. Binary
 
-   The client and server will use packets that store information about
-   message types (e.g. list, play), song number, timestamps, and data in
-   text format.
+   The client and server SHALL communicate using packets to store
+   information about message types (e.g. list, play), song ID, and data
+   in text format.
 
-   When sending over packets, only necessary components (e.g. client
-   does not need to send over the 'data' attribute) are stringified,
-   sent, and decoded back to a packet at the other end.
+   When transmitting packets, only necessary components are stringified,
+   sent, and decoded back to a packet at the other end.  As an example,
+   when the client sends a list request, the song ID and the data
+   attribute MAY not need to be shared with the server.
 
 2.3.  Message Formatting - Message Delimiters
 
-   Attributes of a single packet can be stringified to a string
-   delimited by <NEXT;>.  Note that the string MAY be delimited in other
-   ways.
+   Attributes of a single packet SHALL be stringified to a string
+   delimited by <NEXT;>, and the end of the string MUST be noted as
+   <END;>.  Note that the string MAY be delimited in other ways.
+
+   To reassemble back to a packet structure, simply split the string by
+   <NEXT;> and assign the information to a new packet.
 
    Client --> Server Example:
 
-   *  play<NEXT;>song number<NEXT;>timestamp<NEXT;><END;>
+   *  play<NEXT;>song ID<NEXT;><END;>
 
    Server --> Client Example:
 
-   *  play<NEXT;>song number<NEXT;>timestamp<NEXT;>data<NEXT;><END;>
-
-   Each packet starts with a message type, and an <END;> phrase is used
-   to mark the end of a message.
+   *  play<NEXT;>data<NEXT;><END;>
 
 3.  State
 
-3.1.  State the server should store per-client
+3.1.  Client State
+
+   The client MUST keep track of the following:
+
+   *  current song : the current song that is being played on the client
+      side
+
+   *  current play : boolean flag to specify whether or not a song is
+      currently being played
+
+   *  connection : sock.connect() will check to see if the server is
+      accessible
+
+3.2.  Server State
 
    The server MUST keep track of the following:
 
-   *  connected : the server MUST make sure that the client has an
-      established connection
+   *  client : information about clients the server is connected to
 
-   *  song number : the server MUST keep track of what the client is
-      currently listening to
+   For each client class within the server, the following information
+   MUST be stored:
 
-   *  timestamp : the server MUST keep track of what chunk the client is
-      listening to
+   *  lock : locks access to this client information
 
-   *  play/stop : the server MUST keep track of whether the client wants
-      to play or stop a song
+   *  connection : used to connect to a client and send responses back
 
-3.2.  How messages enable state transitions
+   *  directory : the directory to the music file
+
+   *  songlist : list of songs the server has
+
+   *  current song : the current song that is being played on the client
+      side
+
+   *  packet queue : queue with packets that will be processed and sent
+      back to the client
+
+3.3.  State Transitions
 
    Different message types render the state of the client and server in
    different ways.
 
    Client receives from Server:
 
-   *  list : takes priority over playing, lists the songs, and then
-      resumes current state
+   *  list : does not change the current state, a list will be printed
+      concurrently
 
-   *  play : play music state
+   *  play : takes priority over current state, stops the current song,
+      and renders to music playing state
 
-   *  stop : takes priority over playing, stops the current song, and
-      move to pause state
-
-   *  error : notifies the client and then resumes current state
+   *  stop : takes priority over current state, stops the current song,
+      and renders to stop state
 
    Server receives from Client:
 
-   *  setup : server starts maintaining an open connection with the
-      client
+   *  setup : typically done through a valid sock.connect() on the
+      client side, the server will create a new instance of the Client
+      class to maintain information
 
    *  list : maintains the current state
 
@@ -185,19 +217,67 @@ Table of Contents
 
    *  stop : server stops transmitting data
 
-   *  teardown : server takes priority over any other state and changes
-      to a closed state
+   *  quit : server takes priority over any other state and closes
+      connection to client
 
-4.  Performance Considerations
+4.  Streaming
 
-   *  The "list" command *MIGHT* very briefly pause a song because it
-      takes priority over a "play" state
+4.1.  Step 1 : Creating a Client Request
+
+   Once a connection has been established through sock.connect(), the
+   client is ready to send a request.  All invalid commands will be
+   discarded, and once a valid command has been inputted by the user, a
+   packet will be generated.  This packet holds information on the
+   message type and the song ID (if any).
+
+   Once the packet has been generated, it SHOULD be encoded into a
+   string with the format mentioned in the "Message" section of this
+   document and then sent over to the server.
+
+4.2.  Step 2 : Processing Server Response
+
+   Once a string has been received from the client, the server MUST
+   decode the string back into a packet.  The server will then process
+   the packet to observe the message type and song ID (if any).
+
+   If a list or play request is to be processed, the server SHALL inject
+   data into the packet.  For list requests, this SHOULD be the list of
+   songs and for play requests, this SHOULD be the raw data of music
+   files.  Typically, music files tend to have a higher capacity than
+   the send buffer, and must be sent in separate chunks.  Please see the
+   "Performance Consideration" section of this document for details.
+
+   Once the injection process is finished, the packet is then decoded
+   into a string and sent to the client.
+
+4.3.  Step 3: Processing Client Response
+
+   Once a string has been received from the server, the client MUST
+   decode the string back into a packet.  The client will then process
+   the packet to observe the message type and data (if any).
+
+   If a play request had been issued, the music data will be buffered as
+   much as the receive buffer can handle.  Once the client observes that
+   a packet has data, it will output that data.
+
+5.  Performance Considerations
+
+   *  The "play" command SHALL first issue a stop request, sleep for a
+      short period to process the packet, and then reissue a play
+      request.  A sleep period is important as without it MAY create a
+      collision between the stop and play requests.
 
    *  Since strings are REQUIRED to be delimited by <NEXT;>, our
-      assumption is that there are no "song number" or "data" values
-      that are <NEXT;>
+      assumption is that there are no "song IDs" or "data" values that
+      are <NEXT;>
 
-5.  Acknowledgements
+   *  The max buffer size on both the server and client SHALL be capped
+      at 4096.  The music data itself MUST be capped at 4072 when
+      sending from the server to the client to provide sufficient space
+      for other parts of the message such as message types and
+      delimiters.
+
+6.  Acknowledgements
 
    The authors wish to thank the teaching assistants for reading this
    documentation.
