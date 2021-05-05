@@ -12,6 +12,7 @@ QUEUE_LENGTH = 10
 SEND_BUFFER = 4096
 MAX_DATA_BUFFER = 4072    # this is the amount of buffer allocated for the data only 
 
+# How to SSH into the EC2 instance from the pennify directory: ssh -i ec2/login2.pem ubuntu@ec2-34-228-194-115.compute-1.amazonaws.com
 
 # per-client struct
 class Client:
@@ -164,7 +165,7 @@ def main():
     # references: https://stackoverflow.com/questions/30888397/how-to-set-send-buffer-size-for-sockets-in-python
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, SEND_BUFFER)
-    s.bind(('127.0.0.1', port))
+    s.bind(("34.228.194.115", port))
     s.listen(QUEUE_LENGTH)
 
     while True:

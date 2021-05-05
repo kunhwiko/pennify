@@ -14,6 +14,7 @@ curr_song = None
 curr_play = False
 RECV_BUFFER = 4096
 
+# Public IPv4 DNS: ec2-34-228-194-115.compute-1.amazonaws.com
 
 # The Mad audio library we're using expects to be given a file object, but
 # we're not dealing with files, we're reading audio data over the network.  We
