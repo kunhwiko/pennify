@@ -4,7 +4,7 @@
 3. When inside the EC2 instance, try "cd pennify". If the pennify directory exists, continue to step 5.
 4. If the pennify directory doesn't exist, clone it from this repository.
 5. Inside the pennify directory, run python server.py 55353 music
-6. The server is not running on EC2
+6. The server is now running on EC2
 7. Use ctrl \ to exit the server
 
 ### How to run the client
