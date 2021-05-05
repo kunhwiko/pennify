@@ -93,7 +93,7 @@ def client_write(client):
                         try: 
                             client.conn.sendall(packet.str_packet)
                         except:
-                            print 'Error sending play response to client'  
+                            print 'Lost connection to client, will abort sending packets'  
 
 
 # Thread that receives commands from the client.  All recv() calls should
