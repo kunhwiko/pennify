@@ -6,24 +6,27 @@ The design and the implementation of this protocol informs users the concerns be
 
 Environment:
 
-Note that the server and client run on Python 2, and your environment must be able to handle some of the imports in this program. In our case, a virtual machine (Vagrant) was used to handle such an environment. 
+Note that the server and client run on Python 2, and your environment must be able to handle the imports in this program. In our case, a virtual machine (Vagrant) was used to handle such an environment. 
 
-Although an EC2 instance was used to host our server to handle scalability, here we help to setup the server locally. 
+Although the original application uses an EC2 instance to host the server to handle scalability, **here we help to set up the server locally**. Feel free to set the server inside an EC2 instance to duplicate our results. 
 
-Go to the server directory and type the following to spin up the server:  
+Open up a terminal and type the following to spin up the server:  
 
 ```bash
-python server.py 55353 music
+python server.py 8080 music
 ``` 
 
-Now spin up a client instance: 
+In a separate terminal, spin up a client instance: 
 
 ```bash
-python client.py 
+python client.py 127.0.0.1 8080
 ```
 
+If this fails to work, locate line 168 on the `server.py` file and replace it with the following code:
 
-
+```python
+s.bind(("127.0.0.1", port))
+```
 
 # Messages
 
